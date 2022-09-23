@@ -1,12 +1,12 @@
 package main
 
 import (
-	"crypto/aes"
-	"crypto/cipher"
-	"fmt"
-	"io"
-	"os"
 	"crypto/rand"
+	"fmt"
+	"os"
+
+	"golang.org/x/crypto/nacl/secretbox"
+	"golang.org/x/crypto/scrypt"
 )
 
 func check (e error) {
@@ -15,55 +15,23 @@ func check (e error) {
 	}
 }
 
-func encrypt(data []byte, password string) ([]byte, error) {
-	if len(data) % aes.BlockSize != 0 {
-		panic("blocksize mismatch")
-	}
-	block, err := aes.NewCipher([]byte (password))
-	
-	if err != nil {
-		return nil, err
-	}
-
-	cipertext := make([]byte, aes.BlockSize + len(data))
-	iv := cipertext[:aes.BlockSize]
-	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
-		return nil, err
-	}
-
-	mode := cipher.NewCBCEncrypter(block, iv)
-	mode.CryptBlocks(cipertext[aes.BlockSize:], data)
-
-	return cipertext, nil
-}
-
-func decrypt(data []byte, password string) ([]byte, error) {
-	block, err := aes.NewCipher(([]byte (password)))
-	if err != nil {
-		return nil, err
-	}
-
-	if len(data) < aes.BlockSize {
-		panic("encrypted data too short")
-	}
-	iv := data[:aes.BlockSize]
-	ciphertext := data[aes.BlockSize:]
-
-	if len(ciphertext) % aes.BlockSize != 0 {
-		panic("ciphertext is not a multiple of the block size")
-	}
-
-	mode := cipher.NewCBCDecrypter(block, iv)
-	mode.CryptBlocks(ciphertext, ciphertext)
-	return ciphertext, nil
-}
-
 func main() {
-	password := "pppppppppppppppppppppppppppppppp"
+	password := "Password1234"
+	salt := []byte{0xff, 0x56, 0xfe}
+	secretKeyBytes, err := scrypt.Key([]byte(password), salt, 32768, 8, 1, 32)
+	check(err)
+
+	var secretKey [32]byte
+	copy(secretKey[:], secretKeyBytes)
+
 	data, err := os.ReadFile("test/plain")
 	check(err)
 
-	encrypted_data, err := encrypt(data, password)
+	var nonce [24]byte
+	_, err = rand.Read(nonce[:])
+	check(err)
+
+	encrypted_data := secretbox.Seal(nonce[:], data, &nonce, &secretKey)
 	check(err)
 
 	err = os.WriteFile("test/plain_crypt", encrypted_data, 0664)
@@ -72,6 +40,12 @@ func main() {
 	encrypted_file, err := os.ReadFile("test/plain_crypt")
 	check(err)
 
-	decrypted_data, err := decrypt(encrypted_file, password)
-	fmt.Printf("Decrypted: %v\n", string(decrypted_data))
+	var decryptNonce [24]byte
+	copy(decryptNonce[:], encrypted_file[:24])
+	decrypted_data, ok := secretbox.Open(nil, encrypted_file[24:], &decryptNonce, &secretKey)
+	if !ok {
+		panic("decryption error")
+	}
+
+	fmt.Printf("Decrypted: %v", string(decrypted_data))
 }
