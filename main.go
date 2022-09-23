@@ -1,13 +1,16 @@
 package main
 
 import (
-	"crypto/rand"
-	"fmt"
-	"os"
+_	"crypto/rand"
+_	"os"
 
-	"golang.org/x/crypto/nacl/secretbox"
-	"golang.org/x/crypto/scrypt"
+	"github.com/singurty/peasycrypt/cmd"
+
+_	"golang.org/x/crypto/nacl/secretbox"
+_	"golang.org/x/crypto/scrypt"
 )
+
+var TEST_FILE = "test/video.mkv"
 
 func check (e error) {
 	if e != nil {
@@ -16,6 +19,8 @@ func check (e error) {
 }
 
 func main() {
+	cmd.Execute()
+/**
 	password := "Password1234"
 	salt := []byte{0xff, 0x56, 0xfe}
 	secretKeyBytes, err := scrypt.Key([]byte(password), salt, 32768, 8, 1, 32)
@@ -24,7 +29,7 @@ func main() {
 	var secretKey [32]byte
 	copy(secretKey[:], secretKeyBytes)
 
-	data, err := os.ReadFile("test/plain")
+	data, err := os.ReadFile(TEST_FILE)
 	check(err)
 
 	var nonce [24]byte
@@ -34,10 +39,10 @@ func main() {
 	encrypted_data := secretbox.Seal(nonce[:], data, &nonce, &secretKey)
 	check(err)
 
-	err = os.WriteFile("test/plain_crypt", encrypted_data, 0664)
+	err = os.WriteFile(TEST_FILE + "_crypt", encrypted_data, 0664)
 	check(err)
 
-	encrypted_file, err := os.ReadFile("test/plain_crypt")
+	encrypted_file, err := os.ReadFile(TEST_FILE + "_crypt")
 	check(err)
 
 	var decryptNonce [24]byte
@@ -47,5 +52,7 @@ func main() {
 		panic("decryption error")
 	}
 
-	fmt.Printf("Decrypted: %v", string(decrypted_data))
+	err = os.WriteFile(TEST_FILE + "_decrypt", decrypted_data, 0644)
+	check(err)
+**/
 }
