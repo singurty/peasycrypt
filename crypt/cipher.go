@@ -1,0 +1,44 @@
+package crypt
+
+import (
+	"crypto/aes"
+	"golang.org/x/crypto/scrypt"
+	gocipher "crypto/cipher"
+)
+
+var defaultSalt = []byte{0xff, 0x56, 0xfe, 0x37, 0x99, 0x2f}
+
+type Cipher struct {
+	dataKey [32]byte
+	nameKey [32]byte
+	nameTweak [aes.BlockSize]byte
+	block gocipher.Block
+}
+
+func newCipher(password, salt string) (*Cipher, error) {
+	c := &Cipher{}
+	err := c.key(password, salt)
+	if err != nil {
+		return nil, err
+	}
+	return c, nil
+}
+
+func (c *Cipher) key(password, salt string) (err error) {
+	keySize := len(c.dataKey) + len(c.nameKey) + len(c.nameTweak)
+	var saltBytes []byte
+	if salt != "" {
+		saltBytes = []byte(salt)
+	} else {
+		saltBytes = defaultSalt
+	}
+	key, err := scrypt.Key([]byte(password), saltBytes, 32768, 8, 1, keySize)
+
+	copy(c.dataKey[:], key)
+	copy(c.nameKey[:], key[len(c.dataKey):])
+	copy(c.nameTweak[:], key[len(c.dataKey)+len(c.nameKey):])
+
+	// create name cipher
+	c.block, err = aes.NewCipher(c.nameKey[:])
+	return err
+}
