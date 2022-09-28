@@ -4,6 +4,12 @@ import (
 	"crypto/aes"
 	"golang.org/x/crypto/scrypt"
 	gocipher "crypto/cipher"
+	"path/filepath"
+	"encoding/base64"
+
+	"github.com/singurty/peasycrypt/crypt/pkcs7"
+
+	"github.com/rfjakob/eme"
 )
 
 var defaultSalt = []byte{0xff, 0x56, 0xfe, 0x37, 0x99, 0x2f}
@@ -41,4 +47,15 @@ func (c *Cipher) key(password, salt string) (err error) {
 	// create name cipher
 	c.block, err = aes.NewCipher(c.nameKey[:])
 	return err
+}
+
+func (c *Cipher) encryptName(path string) string {
+	name := filepath.Base(path)
+	if name == "" {
+		return ""
+	}
+	paddedName := pkcs7.Pad(aes.BlockSize, []byte(name))
+	emeCipher := eme.New(c.block)
+	cipherName := emeCipher.Encrypt(c.nameTweak[:], paddedName)
+	return base64.RawStdEncoding.EncodeToString(cipherName)
 }

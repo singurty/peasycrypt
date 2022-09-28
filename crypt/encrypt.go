@@ -1,30 +1,30 @@
 package crypt
 
 import (
-	"crypto/aes"
 	"fmt"
 	"io/fs"
 	"path/filepath"
+	"os"
 
-	"github.com/singurty/peasycrypt/crypt/pkcs7"
 
-	"github.com/rfjakob/eme"
+	"golang.org/x/crypto/ssh/terminal"
 )
 
-func (c *Cipher) encryptName(path string) string {
-	name := filepath.Base(path)
-	if name == "" {
-		return ""
-	}
-	paddedName := pkcs7.Pad(aes.BlockSize, []byte(name))
-	emeCipher := eme.New(c.block)
-	cipherName := emeCipher.Encrypt(c.nameTweak[:], paddedName)
-	return string(cipherName)
-}
-
 func EncryptDirectory(srcPath, dstPath string) {
+	fmt.Printf("Enter password: ")
+	password, err := terminal.ReadPassword(int(os.Stdin.Fd()))
+	fmt.Print("\n")
+	if err != nil {
+		panic(err)
+	}
+	c, err := newCipher(string(password), "")
+	if err != nil {
+		panic(err)
+	}
+
 	filepath.WalkDir(srcPath, func(path string, d fs.DirEntry, err error) error {
 		fmt.Printf("current directory: %v\n", path)
+		fmt.Printf("encrypted name: %v\n", c.encryptName(path))
 		return nil
 	})
 }
