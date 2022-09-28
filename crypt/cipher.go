@@ -59,3 +59,15 @@ func (c *Cipher) encryptName(path string) string {
 	cipherName := emeCipher.Encrypt(c.nameTweak[:], paddedName)
 	return base64.RawStdEncoding.EncodeToString(cipherName)
 }
+
+func (c *Cipher) decryptName(ciphertext string) string {
+	cipherbytes, err := base64.RawStdEncoding.DecodeString(ciphertext)
+	if err != nil {
+		panic(err)
+	}
+
+	emeCipher := eme.New(c.block)
+	paddedName := emeCipher.Decrypt(c.nameTweak[:], cipherbytes)
+	unpaddedName, err := pkcs7.Unpad(aes.BlockSize, paddedName)
+	return string(unpaddedName)
+}

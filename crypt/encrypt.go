@@ -24,7 +24,9 @@ func EncryptDirectory(srcPath, dstPath string) {
 
 	filepath.WalkDir(srcPath, func(path string, d fs.DirEntry, err error) error {
 		fmt.Printf("current directory: %v\n", path)
-		fmt.Printf("encrypted name: %v\n", c.encryptName(path))
+		ciphertext := c.encryptName(path)
+		fmt.Printf("encrypted name: %v\n", ciphertext)
+		fmt.Printf("decrypted name: %v\n", c.decryptName(ciphertext))
 		return nil
 	})
 }
