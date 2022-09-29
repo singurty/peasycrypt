@@ -30,9 +30,7 @@ func EncryptDirectory(srcPath, dstPath string) {
 	srcPath, err = filepath.Abs(srcPath)
 	checkErr(err)
 
-	err = os.Chdir(dstPath)
-	checkErr(err)
-	lastDir := ""
+	os.Chdir(dstPath)
 	err = filepath.WalkDir(srcPath, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -42,27 +40,9 @@ func EncryptDirectory(srcPath, dstPath string) {
 			return nil
 		}
 		fmt.Printf("current directory: %v\n", path)
-		ciphername := c.encryptName(d.Name())
-		fmt.Printf("encrypted name: %v\n", ciphername)
-		fmt.Printf("decrypted name: %v\n", c.decryptName(ciphername))
-
-		if d.IsDir() {
-			// check if sister of last directory
-			if lastDir != "" {
-				rel, err := filepath.Rel(lastDir, path)
-				checkErr(err)
-
-				if strings.HasPrefix(rel, "..") {
-					os.Chdir("..")
-				}
-			}
-			lastDir = path
-			err = os.Mkdir(ciphername, os.ModePerm)
-			checkErr(err)
-			os.Chdir(ciphername)
-		} else {
-
-		}
+		ciphertext := c.encryptName(path)
+		fmt.Printf("encrypted name: %v\n", ciphertext)
+		fmt.Printf("decrypted name: %v\n", c.decryptName(ciphertext))
 		return nil
 	})
 	checkErr(err)

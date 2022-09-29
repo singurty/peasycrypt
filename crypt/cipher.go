@@ -4,8 +4,7 @@ import (
 	"crypto/aes"
 	"golang.org/x/crypto/scrypt"
 	gocipher "crypto/cipher"
-	"path/filepath"
-	"encoding/base64"
+	"encoding/base32"
 
 	"github.com/singurty/peasycrypt/crypt/pkcs7"
 
@@ -49,19 +48,18 @@ func (c *Cipher) key(password, salt string) (err error) {
 	return err
 }
 
-func (c *Cipher) encryptName(path string) string {
-	name := filepath.Base(path)
+func (c *Cipher) encryptName(name string) string {
 	if name == "" {
 		return ""
 	}
 	paddedName := pkcs7.Pad(aes.BlockSize, []byte(name))
 	emeCipher := eme.New(c.block)
 	cipherName := emeCipher.Encrypt(c.nameTweak[:], paddedName)
-	return base64.RawStdEncoding.EncodeToString(cipherName)
+	return base32.StdEncoding.EncodeToString(cipherName)
 }
 
 func (c *Cipher) decryptName(ciphertext string) string {
-	cipherbytes, err := base64.RawStdEncoding.DecodeString(ciphertext)
+	cipherbytes, err := base32.StdEncoding.DecodeString(ciphertext)
 	if err != nil {
 		panic(err)
 	}
