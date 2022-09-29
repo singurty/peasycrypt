@@ -58,16 +58,17 @@ func Encrypt(srcPath, dstPath string) {
 		ciphername := c.encryptName(d.Name())
 		fmt.Printf("encrypted name: %v\n", ciphername)
 
-		if d.IsDir() {
-			// check if sister of last directory
-			if lastDir != "" {
-				rel, err := filepath.Rel(lastDir, path)
-				checkErr(err)
+		// check if sister of last directory
+		if lastDir != "" {
+			rel, err := filepath.Rel(lastDir, path)
+			checkErr(err)
 
-				if strings.HasPrefix(rel, "..") {
-					os.Chdir("..")
-				}
+			if strings.HasPrefix(rel, "..") {
+				os.Chdir("..")
 			}
+		}
+
+		if d.IsDir() {
 			lastDir = path
 			err = os.Mkdir(ciphername, os.ModePerm)
 			checkErr(err)
