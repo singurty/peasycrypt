@@ -10,18 +10,31 @@ import (
 	"golang.org/x/crypto/ssh/terminal"
 )
 
+var c *Cipher
+
 func checkErr(err error) {
 	if err != nil {
 		panic(err)
 	}
 }
 
-func EncryptDirectory(srcPath, dstPath string) {
+func encryptFile(path string) {
+	data, err := os.ReadFile(path)
+	checkErr(err)
+
+	cipherdata, err := c.encryptData(data)
+	checkErr(err)
+
+	err = os.WriteFile(c.encryptName(filepath.Base(path)), cipherdata, 0664)
+	checkErr(err)
+}
+
+func Encrypt(srcPath, dstPath string) {
 	fmt.Printf("Enter password: ")
 	password, err := terminal.ReadPassword(int(os.Stdin.Fd()))
 	checkErr(err)
 	fmt.Print("\n")
-	c, err := newCipher(string(password), "")
+	c, err = newCipher(string(password), "")
 	checkErr(err)
 
 	// rsync style trailing slash
@@ -44,7 +57,6 @@ func EncryptDirectory(srcPath, dstPath string) {
 		fmt.Printf("current directory: %v\n", path)
 		ciphername := c.encryptName(d.Name())
 		fmt.Printf("encrypted name: %v\n", ciphername)
-		fmt.Printf("decrypted name: %v\n", c.decryptName(ciphername))
 
 		if d.IsDir() {
 			// check if sister of last directory
@@ -60,9 +72,10 @@ func EncryptDirectory(srcPath, dstPath string) {
 			err = os.Mkdir(ciphername, os.ModePerm)
 			checkErr(err)
 			os.Chdir(ciphername)
-		} else {
-
+			return nil
 		}
+
+		encryptFile(path)
 		return nil
 	})
 	checkErr(err)

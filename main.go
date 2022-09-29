@@ -6,7 +6,6 @@ _	"os"
 
 	"github.com/singurty/peasycrypt/cmd"
 
-_	"golang.org/x/crypto/nacl/secretbox"
 _	"golang.org/x/crypto/scrypt"
 )
 
@@ -21,26 +20,8 @@ func check (e error) {
 func main() {
 	cmd.Execute()
 /**
-	password := "Password1234"
-	salt := []byte{0xff, 0x56, 0xfe}
-	secretKeyBytes, err := scrypt.Key([]byte(password), salt, 32768, 8, 1, 32)
-	check(err)
 
-	var secretKey [32]byte
-	copy(secretKey[:], secretKeyBytes)
 
-	data, err := os.ReadFile(TEST_FILE)
-	check(err)
-
-	var nonce [24]byte
-	_, err = rand.Read(nonce[:])
-	check(err)
-
-	encrypted_data := secretbox.Seal(nonce[:], data, &nonce, &secretKey)
-	check(err)
-
-	err = os.WriteFile(TEST_FILE + "_crypt", encrypted_data, 0664)
-	check(err)
 
 	encrypted_file, err := os.ReadFile(TEST_FILE + "_crypt")
 	check(err)

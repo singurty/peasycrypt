@@ -16,6 +16,6 @@ var encryptCmd = &cobra.Command{
 	Long: "Encrypt a directory with all its contents. The encrypted content will be at <destination>",
 	Args: cobra.ExactArgs(2),
 	Run: func(command *cobra.Command, args []string) {
-		crypt.EncryptDirectory(args[0], args[1])
+		crypt.Encrypt(args[0], args[1])
 	},
 }

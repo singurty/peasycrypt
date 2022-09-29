@@ -5,10 +5,12 @@ import (
 	"golang.org/x/crypto/scrypt"
 	gocipher "crypto/cipher"
 	"encoding/base32"
-
-	"github.com/singurty/peasycrypt/crypt/pkcs7"
+	"crypto/rand"
 
 	"github.com/rfjakob/eme"
+	"golang.org/x/crypto/nacl/secretbox"
+
+	"github.com/singurty/peasycrypt/crypt/pkcs7"
 )
 
 var defaultSalt = []byte{0xff, 0x56, 0xfe, 0x37, 0x99, 0x2f}
@@ -68,4 +70,15 @@ func (c *Cipher) decryptName(ciphertext string) string {
 	paddedName := emeCipher.Decrypt(c.nameTweak[:], cipherbytes)
 	unpaddedName, err := pkcs7.Unpad(aes.BlockSize, paddedName)
 	return string(unpaddedName)
+}
+
+func (c *Cipher) encryptData(plaindata []byte) ([]byte, error) {
+	var nonce [24]byte
+	_, err := rand.Read(nonce[:])
+	if err != nil {
+		return nil, err
+	}
+
+	encrypted_data := secretbox.Seal(nonce[:], plaindata, &nonce, &c.dataKey)
+	return encrypted_data, nil
 }
