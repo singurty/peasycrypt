@@ -18,7 +18,7 @@ func checkErr(err error) {
 	}
 }
 
-func encryptFile(path string) {
+func encryptFile(path string, deleteSrc bool) {
 	data, err := os.ReadFile(path)
 	checkErr(err)
 
@@ -27,9 +27,15 @@ func encryptFile(path string) {
 
 	err = os.WriteFile(c.encryptName(filepath.Base(path)), cipherdata, 0664)
 	checkErr(err)
+
+	// delete source file after encryption
+	if deleteSrc {
+		err = os.Remove(path)
+		checkErr(err)
+	}
 }
 
-func Encrypt(srcPath, dstPath string) {
+func Encrypt(srcPath, dstPath string, deleteSrc bool) {
 	fmt.Printf("Enter password: ")
 	password, err := terminal.ReadPassword(int(os.Stdin.Fd()))
 	checkErr(err)
@@ -39,7 +45,7 @@ func Encrypt(srcPath, dstPath string) {
 
 	// rsync style trailing slash
 	skipRoot := strings.HasSuffix(srcPath, "/")
-	// convert to absolute so unaffected by changing cwd's later
+	// Convert to absolute so unaffected by changing cwd's later
 	srcPath, err = filepath.Abs(srcPath)
 	checkErr(err)
 
@@ -65,6 +71,20 @@ func Encrypt(srcPath, dstPath string) {
 
 			if strings.HasPrefix(rel, "..") {
 				os.Chdir("..")
+
+				// We only change directories after everything in the last
+				// directory has been encrypted. So last directory can been
+				// deleted after we've changed directories
+				if deleteSrc {
+					err = os.Remove(lastDir)
+					checkErr(err)
+				}
+
+				// After changing directories we might land a file and the
+				// direcotry change will not be detected by the below condition
+				if !d.IsDir() {
+					lastDir = filepath.Dir(path)
+				}
 			}
 		}
 
@@ -76,8 +96,14 @@ func Encrypt(srcPath, dstPath string) {
 			return nil
 		}
 
-		encryptFile(path)
+		encryptFile(path, deleteSrc)
 		return nil
 	})
 	checkErr(err)
+
+	// Delete the last folder we encrypted
+	if deleteSrc {
+		err = os.Remove(lastDir)
+		checkErr(err)
+	}
 }
