@@ -2,10 +2,12 @@ package crypt
 
 import (
 	"crypto/aes"
-	"golang.org/x/crypto/scrypt"
 	gocipher "crypto/cipher"
-	"encoding/base32"
 	"crypto/rand"
+	"encoding/base32"
+	"errors"
+
+	"golang.org/x/crypto/scrypt"
 
 	"github.com/rfjakob/eme"
 	"golang.org/x/crypto/nacl/secretbox"
@@ -81,4 +83,14 @@ func (c *Cipher) encryptData(plaindata []byte) ([]byte, error) {
 
 	encrypted_data := secretbox.Seal(nonce[:], plaindata, &nonce, &c.dataKey)
 	return encrypted_data, nil
+}
+
+func (c *Cipher) decryptData(cipherdata []byte) ([]byte, error) {
+	var decryptNonce [24]byte
+	copy(decryptNonce[:], cipherdata[:24])
+	decryptedData, ok := secretbox.Open(nil, cipherdata[24:], &decryptNonce, &c.dataKey)
+	if !ok {
+		return nil, errors.New("decryption error")
+	}
+	return decryptedData, nil
 }

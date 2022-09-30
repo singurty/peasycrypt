@@ -1,6 +1,7 @@
 package crypt
 
 import (
+	"bytes"
 	"errors"
 	"os"
 	"path/filepath"
@@ -46,8 +47,8 @@ func TestEncryptFile(t *testing.T) {
 	}
 	
 	plainFile := filepath.Join(plainDir, "hello.txt")
-	data := []byte("hello this is peasycrypt speaking")
-	err = os.WriteFile(plainFile, data, 0644)
+	plainData := []byte("hello this is peasycrypt speaking")
+	err = os.WriteFile(plainFile, plainData, 0644)
 	if err != nil {
 		t.Errorf("failed to create plain text file\n")
 	}
@@ -58,7 +59,7 @@ func TestEncryptFile(t *testing.T) {
 
 	// Check encrypted filename and data
 	cipherFile := filepath.Join(cryptDir, "JEKQ5W7EBBGACXZOCU6QCNFUL4======")
-	_, err = os.ReadFile(cipherFile)
+	cipherdata, err := os.ReadFile(cipherFile)
 	if errors.Is(err, os.ErrNotExist) {
 		t.Errorf("failed to create file with encrypted name")
 	} else if err != nil {
@@ -72,11 +73,17 @@ func TestEncryptFile(t *testing.T) {
 	if decryptedName != filepath.Base(plainFile) {
 		t.Errorf("decrypted name mismatch")
 	}
-
 	
 	// Encryption cannot be changed independently because the nonce is randomly
 	// generated. We can test decryption of data and if that works encryption and
 	// decryption both works.
+	decryptedData, err := c.decryptData(cipherdata)
+	if err != nil {
+		t.Errorf("failed data decryption: %v", err)
+	}
+	if bytes.Compare(plainData, decryptedData) != 0 {
+		t.Errorf("decrypted data mismatch")
+	}
 
 	err = removeTestDirs()
 	if err != nil {
