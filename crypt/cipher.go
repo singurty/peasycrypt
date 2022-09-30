@@ -60,16 +60,16 @@ func (c *Cipher) encryptName(name string) string {
 	return base32.StdEncoding.EncodeToString(cipherName)
 }
 
-func (c *Cipher) decryptName(ciphertext string) string {
+func (c *Cipher) decryptName(ciphertext string) (string, error) {
 	cipherbytes, err := base32.StdEncoding.DecodeString(ciphertext)
 	if err != nil {
-		panic(err)
+		return "", err
 	}
 
 	emeCipher := eme.New(c.block)
 	paddedName := emeCipher.Decrypt(c.nameTweak[:], cipherbytes)
 	unpaddedName, err := pkcs7.Unpad(aes.BlockSize, paddedName)
-	return string(unpaddedName)
+	return string(unpaddedName), nil
 }
 
 func (c *Cipher) encryptData(plaindata []byte) ([]byte, error) {

@@ -65,8 +65,18 @@ func TestEncryptFile(t *testing.T) {
 		t.Error(err)
 	}
 	
-	// Check if the file data encrypted correctly
-	// (will be added after decryption is implemented)
+	decryptedName, err := c.decryptName(filepath.Base(cipherFile))
+	if err != nil {
+		t.Errorf("failed name decryption: %v", err)
+	}
+	if decryptedName != filepath.Base(plainFile) {
+		t.Errorf("decrypted name mismatch")
+	}
+
+	
+	// Encryption cannot be changed independently because the nonce is randomly
+	// generated. We can test decryption of data and if that works encryption and
+	// decryption both works.
 
 	err = removeTestDirs()
 	if err != nil {
