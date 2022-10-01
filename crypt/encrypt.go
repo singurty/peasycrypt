@@ -18,6 +18,19 @@ func checkErr(err error) {
 	}
 }
 
+func Encrypt(password, srcPath, dstPath string, deleteSrc bool) {
+	if password == "" {
+		fmt.Printf("Enter password: ")
+		passwordByte, err := terminal.ReadPassword(int(os.Stdin.Fd()))
+		password = string(passwordByte)
+		checkErr(err)
+	}
+	fmt.Print("\n")
+	var err error
+	c, err = newCipher(string(password), "")
+	checkErr(err)
+}
+
 func encryptFile(path string, deleteSrc bool) {
 	data, err := os.ReadFile(path)
 	checkErr(err)
@@ -35,18 +48,11 @@ func encryptFile(path string, deleteSrc bool) {
 	}
 }
 
-func Encrypt(srcPath, dstPath string, deleteSrc bool) {
-	fmt.Printf("Enter password: ")
-	password, err := terminal.ReadPassword(int(os.Stdin.Fd()))
-	checkErr(err)
-	fmt.Print("\n")
-	c, err = newCipher(string(password), "")
-	checkErr(err)
-
+func encryptDirectory(srcPath, dstPath string, deleteSrc bool) {
 	// rsync style trailing slash
 	skipRoot := strings.HasSuffix(srcPath, "/")
 	// Convert to absolute so unaffected by changing cwd's later
-	srcPath, err = filepath.Abs(srcPath)
+	srcPath, err := filepath.Abs(srcPath)
 	checkErr(err)
 
 	err = os.Chdir(dstPath)
