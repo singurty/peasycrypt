@@ -29,6 +29,17 @@ func Encrypt(password, srcPath, dstPath string, deleteSrc bool) {
 	var err error
 	c, err = newCipher(string(password), "")
 	checkErr(err)
+
+	fi, err := os.Stat(srcPath)
+	checkErr(err)
+	if fi.IsDir() {
+		encryptDirectory(srcPath, dstPath, deleteSrc)
+	} else {
+		srcPath, err = filepath.Abs(srcPath)
+		checkErr(err)
+		os.Chdir(dstPath)
+		encryptFile(srcPath, deleteSrc)
+	}
 }
 
 func encryptFile(path string, deleteSrc bool) {
@@ -38,8 +49,12 @@ func encryptFile(path string, deleteSrc bool) {
 	cipherdata, err := c.encryptData(data)
 	checkErr(err)
 
-	err = os.WriteFile(c.encryptName(filepath.Base(path)), cipherdata, 0664)
+	ciphername := c.encryptName(filepath.Base(path))
+	err = os.WriteFile(ciphername, cipherdata, 0664)
 	checkErr(err)
+
+	fmt.Printf("current file: %v\n", path)
+	fmt.Printf("encrypted name: %v\n", ciphername)
 
 	// delete source file after encryption
 	if deleteSrc {
