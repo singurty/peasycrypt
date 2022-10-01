@@ -55,7 +55,6 @@ func TestEncryptFile(t *testing.T) {
 
 	os.Chdir(cryptDir)
 	encryptFile(plainFile, false)
-	os.Chdir(rootDir)
 
 	// Check encrypted filename and data
 	cipherFile := filepath.Join(cryptDir, "JEKQ5W7EBBGACXZOCU6QCNFUL4======")
@@ -85,9 +84,46 @@ func TestEncryptFile(t *testing.T) {
 		t.Errorf("decrypted data mismatch")
 	}
 
+	// Since deleteSrc was set to false, the original file should still exist
+	exist, err := doesFileExist(plainFile)
+	if !exist {
+		if err == nil {
+			t.Errorf("file deleted when deleteSrc set to false")
+		} else {
+			t.Error(err)
+		}
+	}
+	
+	// Original file should be deleted when deleteSrc is set to true
+	encryptFile(plainFile, true)
+	exist, err = doesFileExist(plainFile)
+	if exist {
+		t.Errorf("file not deleted when deleteSrc set to false")
+	} else if err != nil {
+		t.Error(err)
+	}
+
+	os.Chdir(rootDir)
 	err = removeTestDirs()
 	if err != nil {
-		t.Errorf("failed to remove test dirs\n")
+		t.Errorf("failed to remove test dirs")
+	}
+}
+
+func TestEncrypt(t *testing.T) {
+	err := createTestDirs()
+	if err != nil {
+		t.Error(err)
+	}
+
+	err = os.MkdirAll(filepath.Join(plainDir, "/writings/nicer"), os.ModePerm)
+	if err != nil {
+		t.Error(err)
+	}
+
+	err = removeTestDirs()
+	if err != nil {
+		t.Error(err)
 	}
 }
 
@@ -101,4 +137,16 @@ func createTestDirs() error {
 
 func removeTestDirs() error {
 	return os.RemoveAll(testDir)
+}
+
+func doesFileExist(path string) (bool, error) {
+	_, err := os.Stat(path)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return false, nil
+		} else {
+			return false, err
+		}
+	}
+	return true, nil
 }
