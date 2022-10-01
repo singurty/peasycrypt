@@ -151,7 +151,6 @@ func checkDirTree(t *testing.T, path string, expectedTree []string) {
 			rootGone = true
 			return nil
 		}
-		t.Logf("current file: %v", path)
 		if !strings.HasSuffix(path, expectedTree[i]) {
 			t.Errorf("direcotry is not what it should be.\nexpected: %v\ngot:%v", expectedTree[i], path)
 		}

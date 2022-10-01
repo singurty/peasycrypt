@@ -53,8 +53,8 @@ func encryptFile(path string, deleteSrc bool) {
 	err = os.WriteFile(ciphername, cipherdata, 0664)
 	checkErr(err)
 
-	fmt.Printf("current file: %v\n", path)
-	fmt.Printf("encrypted name: %v\n", ciphername)
+//	fmt.Printf("current file: %v\n", path)
+//	fmt.Printf("encrypted name: %v\n", ciphername)
 
 	// delete source file after encryption
 	if deleteSrc {
@@ -81,9 +81,9 @@ func encryptDirectory(srcPath, dstPath string, deleteSrc bool) {
 		if srcPath == path && skipRoot {
 			return nil
 		}
-		fmt.Printf("current directory: %v\n", path)
 		ciphername := c.encryptName(d.Name())
-		fmt.Printf("encrypted name: %v\n", ciphername)
+//		fmt.Printf("current directory: %v\n", path)
+//		fmt.Printf("encrypted name: %v\n", ciphername)
 
 		// check if sister of last directory
 		if lastDir != "" {
