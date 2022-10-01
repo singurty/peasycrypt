@@ -3,8 +3,10 @@ package crypt
 import (
 	"bytes"
 	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -48,10 +50,7 @@ func TestEncryptFile(t *testing.T) {
 	
 	plainFile := filepath.Join(plainDir, "hello.txt")
 	plainData := []byte("hello this is peasycrypt speaking")
-	err = os.WriteFile(plainFile, plainData, 0644)
-	if err != nil {
-		t.Errorf("failed to create plain text file\n")
-	}
+	createFile(plainFile, plainData, t)
 
 	os.Chdir(cryptDir)
 	encryptFile(plainFile, false)
@@ -104,10 +103,7 @@ func TestEncryptFile(t *testing.T) {
 	}
 
 	os.Chdir(rootDir)
-	err = removeTestDirs()
-	if err != nil {
-		t.Errorf("failed to remove test dirs")
-	}
+	removeTestDirs(t)
 }
 
 func TestEncrypt(t *testing.T) {
@@ -121,7 +117,41 @@ func TestEncrypt(t *testing.T) {
 		t.Error(err)
 	}
 
-	err = removeTestDirs()
+	createFile(filepath.Join(plainDir, "writings/hello.txt"), []byte("hello"), t)
+	createFile(filepath.Join(plainDir, "writings/hi.txt"), []byte("hi"), t)
+	createFile(filepath.Join(plainDir, "writings/nicer/nicehello.txt"), []byte("nice hello"), t)
+	createFile(filepath.Join(plainDir, "writings/nicer/nicehi.txt"), []byte("nice hi"), t)
+
+	expectedTreeWithoutRoot := []string{
+		"DLLEA4TLUPRHUQQUQZUDTSWIW4======",
+		"DLLEA4TLUPRHUQQUQZUDTSWIW4======/CGCJTJLM4JNSAPOXNGM3GKQKLM======",
+		"DLLEA4TLUPRHUQQUQZUDTSWIW4======/GHNM7O5RFLH3JLTVAA7NYKIZWU======",
+		"DLLEA4TLUPRHUQQUQZUDTSWIW4======/GHNM7O5RFLH3JLTVAA7NYKIZWU======/HLIZPUQ5XCYEIIWTRMJ5INV7GA======",
+		"DLLEA4TLUPRHUQQUQZUDTSWIW4======/GHNM7O5RFLH3JLTVAA7NYKIZWU======/X53HPKF55O2L6X4S54PP2JUMJU======",
+		"DLLEA4TLUPRHUQQUQZUDTSWIW4======/JEKQ5W7EBBGACXZOCU6QCNFUL4======",
+	}
+
+	encryptDirectory(plainDir + "/", cryptDir, true)
+	checkDirTree(t, cryptDir, expectedTreeWithoutRoot)
+
+	removeTestDirs(t)
+}
+
+func checkDirTree(t *testing.T, path string, expectedTree []string) {
+	var rootGone bool
+	var i int
+	err := filepath.WalkDir(path, func(path string, d fs.DirEntry, err error) error {
+		if !rootGone {
+			rootGone = true
+			return nil
+		}
+		t.Logf("current file: %v", path)
+		if !strings.HasSuffix(path, expectedTree[i]) {
+			t.Errorf("direcotry is not what it should be.\nexpected: %v\ngot:%v", expectedTree[i], path)
+		}
+		i++
+		return nil
+	})
 	if err != nil {
 		t.Error(err)
 	}
@@ -135,8 +165,18 @@ func createTestDirs() error {
 	return os.MkdirAll(cryptDir, os.ModePerm)
 }
 
-func removeTestDirs() error {
-	return os.RemoveAll(testDir)
+func removeCryptDir(t *testing.T) {
+	err := os.RemoveAll(cryptDir)
+	if err != nil {
+		t.Error(err)
+	}
+}
+
+func removeTestDirs(t *testing.T) {
+	err := os.RemoveAll(testDir)
+	if err != nil {
+		t.Error(err)
+	}
 }
 
 func doesFileExist(path string) (bool, error) {
@@ -149,4 +189,11 @@ func doesFileExist(path string) (bool, error) {
 		}
 	}
 	return true, nil
+}
+
+func createFile(path string, data []byte, t *testing.T) {
+	err := os.WriteFile(path, data, 0644)
+	if err != nil {
+		t.Error(err)
+	}
 }
