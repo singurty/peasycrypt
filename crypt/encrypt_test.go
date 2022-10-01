@@ -43,10 +43,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestEncryptFile(t *testing.T) {
-	err := createTestDirs()
-	if err != nil {
-		t.Errorf("failed to create test dirs\n")
-	}
+	 createTestDirs(t)
 	
 	plainFile := filepath.Join(plainDir, "hello.txt")
 	plainData := []byte("hello this is peasycrypt speaking")
@@ -107,12 +104,9 @@ func TestEncryptFile(t *testing.T) {
 }
 
 func TestEncrypt(t *testing.T) {
-	err := createTestDirs()
-	if err != nil {
-		t.Error(err)
-	}
+	createTestDirs(t)
 
-	err = os.MkdirAll(filepath.Join(plainDir, "/writings/nicer"), os.ModePerm)
+	err := os.MkdirAll(filepath.Join(plainDir, "/writings/nicer"), os.ModePerm)
 	if err != nil {
 		t.Error(err)
 	}
@@ -130,9 +124,21 @@ func TestEncrypt(t *testing.T) {
 		"DLLEA4TLUPRHUQQUQZUDTSWIW4======/GHNM7O5RFLH3JLTVAA7NYKIZWU======/X53HPKF55O2L6X4S54PP2JUMJU======",
 		"DLLEA4TLUPRHUQQUQZUDTSWIW4======/JEKQ5W7EBBGACXZOCU6QCNFUL4======",
 	}
+	expectedTreeWithRoot := make([]string, len(expectedTreeWithoutRoot) + 1)
+	expectedTreeWithRoot[0] = "JNKKS57W7VHCCRMRVTO6FW4SCE======"
+	for i, withoutRoot := range expectedTreeWithoutRoot {
+		withRoot := filepath.Join("JNKKS57W7VHCCRMRVTO6FW4SCE======", withoutRoot)
+		expectedTreeWithRoot[i+1] = withRoot
+	}
 
 	encryptDirectory(plainDir + "/", cryptDir, true)
 	checkDirTree(t, cryptDir, expectedTreeWithoutRoot)
+
+	// Test again without omitting the root direcotry
+	removeCryptDir(t)
+	createTestDirs(t)
+	encryptDirectory(plainDir, cryptDir, true)
+	checkDirTree(t, cryptDir, expectedTreeWithRoot)
 
 	removeTestDirs(t)
 }
@@ -157,12 +163,15 @@ func checkDirTree(t *testing.T, path string, expectedTree []string) {
 	}
 }
 
-func createTestDirs() error {
+func createTestDirs(t *testing.T) {
 	err := os.MkdirAll(plainDir, os.ModePerm)
 	if err != nil {
-		return err
+		t.Errorf("failed to create test dirs\n")
 	}
-	return os.MkdirAll(cryptDir, os.ModePerm)
+	err = os.MkdirAll(cryptDir, os.ModePerm)
+	if err != nil {
+		t.Errorf("failed to create test dirs\n")
+	}
 }
 
 func removeCryptDir(t *testing.T) {
