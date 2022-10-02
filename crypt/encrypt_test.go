@@ -145,7 +145,7 @@ func TestEncryptDirectory(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	} else if exists {
-		t.Errorf("plainDir not deleted when deleteSrc set to true and root dir encryption not ommited")
+		t.Errorf("plainDir not deleted when deleteSrc set to true and root dir encryption not omitted")
 	}
 
 	removeTestDirs(t)
