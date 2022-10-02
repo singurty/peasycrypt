@@ -3,6 +3,7 @@ package crypt
 import (
 	"bytes"
 	"errors"
+	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -38,7 +39,7 @@ func TestEncryptFile(t *testing.T) {
 	
 	plainFile := filepath.Join(plainDir, "hello.txt")
 	plainData := []byte("hello this is peasycrypt speaking")
-	createFile(plainFile, plainData, t)
+	createFile(t, plainFile, plainData)
 
 	os.Chdir(cryptDir)
 	encryptFile(plainFile, false)
@@ -102,10 +103,10 @@ func TestEncryptDirectory(t *testing.T) {
 		t.Error(err)
 	}
 
-	createFile(filepath.Join(plainDir, "writings/hello.txt"), []byte("hello"), t)
-	createFile(filepath.Join(plainDir, "writings/hi.txt"), []byte("hi"), t)
-	createFile(filepath.Join(plainDir, "writings/nicer/nicehello.txt"), []byte("nice hello"), t)
-	createFile(filepath.Join(plainDir, "writings/nicer/nicehi.txt"), []byte("nice hi"), t)
+	createFile(t, filepath.Join(plainDir, "writings/hello.txt"), []byte("hello"))
+	createFile(t, filepath.Join(plainDir, "writings/hi.txt"), []byte("hi"))
+	createFile(t, filepath.Join(plainDir, "writings/nicer/nicehello.txt"), []byte("nice hello"))
+	createFile(t, filepath.Join(plainDir, "writings/nicer/nicehi.txt"), []byte("nice hi"))
 
 	expectedTreeWithoutRoot := []string{
 		"DLLEA4TLUPRHUQQUQZUDTSWIW4======",
@@ -122,14 +123,30 @@ func TestEncryptDirectory(t *testing.T) {
 		expectedTreeWithRoot[i+1] = withRoot
 	}
 
-	encryptDirectory(plainDir + "/", cryptDir, true)
+	encryptDirectory(plainDir + "/", cryptDir, false)
 	checkDirTree(t, cryptDir, expectedTreeWithoutRoot)
+
+	// Since we set deleteSrc to true, plainDir should now be empty
+	empty, err := isEmpty(plainDir, t)
+	if err != nil {
+		t.Error(err)
+	} else if !empty {
+		t.Errorf("plainDir not empty when deleteSrc set to true")
+	}
 
 	// Test again without omitting the root direcotry
 	removeCryptDir(t)
 	createTestDirs(t)
 	encryptDirectory(plainDir, cryptDir, true)
 	checkDirTree(t, cryptDir, expectedTreeWithRoot)
+
+	// Since we set deleteSrc to true and did not omit the root directory, plainDir should not exist
+	exists, err := doesFileExist(plainDir)
+	if err != nil {
+		t.Error(err)
+	} else if exists {
+		t.Errorf("plainDir not deleted when deleteSrc set to true and root dir encryption not ommited")
+	}
 
 	removeTestDirs(t)
 }
@@ -190,7 +207,21 @@ func doesFileExist(path string) (bool, error) {
 	return true, nil
 }
 
-func createFile(path string, data []byte, t *testing.T) {
+func isEmpty(path string, t *testing.T) (bool, error) {
+	f, err := os.Open(path)
+    if err != nil {
+		return false, err
+    }
+    defer f.Close()
+
+	_, err = f.Readdirnames(0)
+    if errors.Is(err, io.EOF) {
+        return true, nil
+    }
+    return false, err
+}
+
+func createFile(t *testing.T, path string, data []byte) {
 	err := os.WriteFile(path, data, 0644)
 	if err != nil {
 		t.Error(err)
