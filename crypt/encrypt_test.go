@@ -19,31 +19,22 @@ func TestMain(m *testing.M) {
 	// Setup test paths
 	var err error
 	rootDir, err = filepath.Abs(".")
-	if err != nil {
-		panic(err)
-	}
+	checkErr(err)
 	testDir, err = filepath.Abs("testdata")
-	if err != nil {
-		panic(err)
-	}
+	checkErr(err)
 	plainDir, err = filepath.Abs("testdata/plain")
-	if err != nil {
-		panic(err)
-	}
+	checkErr(err)
 	cryptDir, err = filepath.Abs("testdata/crypt")
-	if err != nil {
-		panic(err)
-	}
+	checkErr(err)
+
 	// Setup cipher
 	c, err = newCipher("", "")
-	if err != nil {
-		panic(err)
-	}
+	checkErr(err)
 	os.Exit(m.Run())
 }
 
 func TestEncryptFile(t *testing.T) {
-	 createTestDirs(t)
+	createTestDirs(t)
 	
 	plainFile := filepath.Join(plainDir, "hello.txt")
 	plainData := []byte("hello this is peasycrypt speaking")
@@ -103,7 +94,7 @@ func TestEncryptFile(t *testing.T) {
 	removeTestDirs(t)
 }
 
-func TestEncrypt(t *testing.T) {
+func TestEncryptDirectory(t *testing.T) {
 	createTestDirs(t)
 
 	err := os.MkdirAll(filepath.Join(plainDir, "/writings/nicer"), os.ModePerm)
