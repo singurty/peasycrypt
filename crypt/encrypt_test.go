@@ -123,7 +123,7 @@ func TestEncryptDirectory(t *testing.T) {
 		expectedTreeWithRoot[i+1] = withRoot
 	}
 
-	encryptDirectory(plainDir + "/", cryptDir, false)
+	encryptDirectory(plainDir + "/", cryptDir, true)
 	checkDirTree(t, cryptDir, expectedTreeWithoutRoot)
 
 	// Since we set deleteSrc to true, plainDir should now be empty
@@ -135,7 +135,7 @@ func TestEncryptDirectory(t *testing.T) {
 	}
 
 	// Test again without omitting the root direcotry
-	removeCryptDir(t)
+	removeTestDirs(t)
 	createTestDirs(t)
 	encryptDirectory(plainDir, cryptDir, true)
 	checkDirTree(t, cryptDir, expectedTreeWithRoot)
@@ -181,13 +181,6 @@ func createTestDirs(t *testing.T) {
 	}
 }
 
-func removeCryptDir(t *testing.T) {
-	err := os.RemoveAll(cryptDir)
-	if err != nil {
-		t.Error(err)
-	}
-}
-
 func removeTestDirs(t *testing.T) {
 	err := os.RemoveAll(testDir)
 	if err != nil {
@@ -214,7 +207,7 @@ func isEmpty(path string, t *testing.T) (bool, error) {
     }
     defer f.Close()
 
-	_, err = f.Readdirnames(0)
+	_, err = f.Readdirnames(1)
     if errors.Is(err, io.EOF) {
         return true, nil
     }
