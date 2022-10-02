@@ -85,7 +85,7 @@ func encryptDirectory(srcPath, dstPath string, deleteSrc bool) {
 //		fmt.Printf("current directory: %v\n", path)
 //		fmt.Printf("encrypted name: %v\n", ciphername)
 
-		// check if sister of last directory
+		// Check if sister or parent of last directory
 		if lastDir != "" {
 			rel, err := filepath.Rel(lastDir, path)
 			checkErr(err)
@@ -93,7 +93,7 @@ func encryptDirectory(srcPath, dstPath string, deleteSrc bool) {
 			if strings.HasPrefix(rel, "..") {
 				os.Chdir("..")
 
-				// We only change directories after everything in the last
+				// We only go back a directory after everything in the last
 				// directory has been encrypted. So last directory can been
 				// deleted after we've changed directories
 				if deleteSrc {
@@ -122,9 +122,26 @@ func encryptDirectory(srcPath, dstPath string, deleteSrc bool) {
 	})
 	checkErr(err)
 
-	// Delete the last folder we encrypted
 	if deleteSrc {
-		err = os.Remove(lastDir)
-		checkErr(err)
+		// Delete directores that were empty after the last iteration of the walk loop,
+		// but weren't visited again because they were already visited when they had children
+		if skipRoot {
+			removeContents(srcPath)
+		} else {
+			err = os.RemoveAll(srcPath)
+			checkErr(err)
+		}
 	}
+}
+
+func removeContents(dir string) {
+	d, err := os.Open(dir)
+	checkErr(err)
+    defer d.Close()
+    names, err := d.Readdirnames(0)
+	checkErr(err)
+    for _, name := range names {
+        err = os.RemoveAll(filepath.Join(dir, name))
+		checkErr(err)
+    }
 }
