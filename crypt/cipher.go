@@ -6,6 +6,7 @@ import (
 	"crypto/rand"
 	"encoding/base32"
 	"errors"
+	"strings"
 
 	"golang.org/x/crypto/scrypt"
 
@@ -20,7 +21,36 @@ const (
 	headerSize = nonceSize + secretbox.Overhead
 )
 
+// Errors returned by cipher
+var (
+	ErrorBadBase32Encoding = errors.New("bad base32 filename encoding")
+)
+
 var defaultSalt = []byte{0xff, 0x56, 0xfe, 0x37, 0x99, 0x2f}
+
+// The standard base32 encoding is modified in two ways
+//  * it becomes lower case (no-one likes upper case filenames!)
+//  * we strip the padding character `=`
+
+// EncodeToString encodes a strign using the modified version of
+// base32 encoding.
+func encodeToString(src []byte) string {
+	encoded := base32.HexEncoding.EncodeToString(src)
+	encoded = strings.TrimRight(encoded, "=")
+	return strings.ToLower(encoded)
+}
+
+// DecodeString decodes a string as encoded by EncodeToString
+func decodeString(s string) ([]byte, error) {
+	if strings.HasSuffix(s, "=") {
+		return nil, ErrorBadBase32Encoding
+	}
+	// First figure out how many padding characters to add
+	roundUpToMultipleOf8 := (len(s) + 7) &^ 7
+	equals := roundUpToMultipleOf8 - len(s)
+	s = strings.ToUpper(s) + "========"[:equals]
+	return base32.HexEncoding.DecodeString(s)
+}
 
 type Cipher struct {
 	dataKey [32]byte
@@ -64,11 +94,11 @@ func (c *Cipher) encryptName(name string) string {
 	paddedName := pkcs7.Pad(aes.BlockSize, []byte(name))
 	emeCipher := eme.New(c.block)
 	cipherName := emeCipher.Encrypt(c.nameTweak[:], paddedName)
-	return base32.StdEncoding.EncodeToString(cipherName)
+	return encodeToString(cipherName)
 }
 
 func (c *Cipher) decryptName(ciphertext string) (string, error) {
-	cipherbytes, err := base32.StdEncoding.DecodeString(ciphertext)
+	cipherbytes, err := decodeString(ciphertext)
 	if err != nil {
 		return "", err
 	}

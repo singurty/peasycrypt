@@ -45,7 +45,7 @@ func TestEncryptFile(t *testing.T) {
 	encryptFile(plainFile, false)
 
 	// Check encrypted filename and data
-	cipherFile := filepath.Join(cryptDir, "JEKQ5W7EBBGACXZOCU6QCNFUL4======")
+	cipherFile := filepath.Join(cryptDir, "94agtmv411602npe2kug2d5kbs")
 	cipherdata, err := os.ReadFile(cipherFile)
 	if errors.Is(err, os.ErrNotExist) {
 		t.Errorf("failed to create file with encrypted name")
@@ -109,17 +109,17 @@ func TestEncryptDirectory(t *testing.T) {
 	createFile(t, filepath.Join(plainDir, "writings/nicer/nicehi.txt"), []byte("nice hi"))
 
 	expectedTreeWithoutRoot := []string{
-		"DLLEA4TLUPRHUQQUQZUDTSWIW4======",
-		"DLLEA4TLUPRHUQQUQZUDTSWIW4======/CGCJTJLM4JNSAPOXNGM3GKQKLM======",
-		"DLLEA4TLUPRHUQQUQZUDTSWIW4======/GHNM7O5RFLH3JLTVAA7NYKIZWU======",
-		"DLLEA4TLUPRHUQQUQZUDTSWIW4======/GHNM7O5RFLH3JLTVAA7NYKIZWU======/HLIZPUQ5XCYEIIWTRMJ5INV7GA======",
-		"DLLEA4TLUPRHUQQUQZUDTSWIW4======/GHNM7O5RFLH3JLTVAA7NYKIZWU======/X53HPKF55O2L6X4S54PP2JUMJU======",
-		"DLLEA4TLUPRHUQQUQZUDTSWIW4======/JEKQ5W7EBBGACXZOCU6QCNFUL4======",
+		"3bb40sjbkfh7kggkgpk3jim8ms",
+		"3bb40sjbkfh7kggkgpk3jim8ms/2629j9bcs9di0fend6cr6agabc",
+		"3bb40sjbkfh7kggkgpk3jim8ms/67dcveth5b7r9bjl00vdoa8pmk",
+		"3bb40sjbkfh7kggkgpk3jim8ms/67dcveth5b7r9bjl00vdoa8pmk/7b8pfkgtn2o488mjhc9t8dlv60",
+		"3bb40sjbkfh7kggkgpk3jim8ms/67dcveth5b7r9bjl00vdoa8pmk/ntr7fa5tteqbunsitsffq9kc9k",
+		"3bb40sjbkfh7kggkgpk3jim8ms/94agtmv411602npe2kug2d5kbs",
 	}
 	expectedTreeWithRoot := make([]string, len(expectedTreeWithoutRoot) + 1)
-	expectedTreeWithRoot[0] = "JNKKS57W7VHCCRMRVTO6FW4SCE======"
+	expectedTreeWithRoot[0] = "9daaitvmvl722hchljeu5msi24"
 	for i, withoutRoot := range expectedTreeWithoutRoot {
-		withRoot := filepath.Join("JNKKS57W7VHCCRMRVTO6FW4SCE======", withoutRoot)
+		withRoot := filepath.Join(expectedTreeWithRoot[0], withoutRoot)
 		expectedTreeWithRoot[i+1] = withRoot
 	}
 
@@ -159,6 +159,7 @@ func checkDirTree(t *testing.T, path string, expectedTree []string) {
 			rootGone = true
 			return nil
 		}
+//		t.Logf("current entry: %v", path)
 		if !strings.HasSuffix(path, expectedTree[i]) {
 			t.Errorf("direcotry is not what it should be.\nexpected: %v\ngot:%v", expectedTree[i], path)
 		}
