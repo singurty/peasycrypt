@@ -1,10 +1,11 @@
 package crypt
 
 import (
+	"errors"
 	"fmt"
 	"io/fs"
-	"path/filepath"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"golang.org/x/crypto/ssh/terminal"
@@ -50,8 +51,27 @@ func encryptFile(path string, deleteSrc bool) {
 	checkErr(err)
 
 	ciphername := c.encryptName(filepath.Base(path))
-	err = os.WriteFile(ciphername, cipherdata, 0664)
-	checkErr(err)
+
+	// Check if the file has already been encrypted by
+	// a previous run of peasycrypt
+	fi, err := os.Stat(ciphername)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			err = os.WriteFile(ciphername, cipherdata, 0664)
+			checkErr(err)
+		} else {
+			panic(err)
+		}
+	} else {
+		// Check if the file was finished encrypting in the
+		// last run. If not, encrypt it again.
+		plainfi, err := os.Stat(path)
+		checkErr(err)
+		if fi.Size() != encryptedSize(plainfi.Size()) {
+			err = os.WriteFile(ciphername, cipherdata, 0664)
+			checkErr(err)
+		}
+	}
 
 //	fmt.Printf("current file: %v\n", path)
 //	fmt.Printf("encrypted name: %v\n", ciphername)
@@ -112,7 +132,9 @@ func encryptDirectory(srcPath, dstPath string, deleteSrc bool) {
 		if d.IsDir() {
 			lastDir = path
 			err = os.Mkdir(ciphername, os.ModePerm)
-			checkErr(err)
+			if err != nil && !errors.Is(err, os.ErrExist) {
+				panic(err)
+			}
 			os.Chdir(ciphername)
 			return nil
 		}
@@ -137,11 +159,11 @@ func encryptDirectory(srcPath, dstPath string, deleteSrc bool) {
 func removeContents(dir string) {
 	d, err := os.Open(dir)
 	checkErr(err)
-    defer d.Close()
-    names, err := d.Readdirnames(0)
+	defer d.Close()
+	names, err := d.Readdirnames(0)
 	checkErr(err)
-    for _, name := range names {
-        err = os.RemoveAll(filepath.Join(dir, name))
+	for _, name := range names {
+		err = os.RemoveAll(filepath.Join(dir, name))
 		checkErr(err)
     }
 }

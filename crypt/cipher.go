@@ -15,6 +15,11 @@ import (
 	"github.com/singurty/peasycrypt/crypt/pkcs7"
 )
 
+const (
+	nonceSize = 24
+	headerSize = nonceSize + secretbox.Overhead
+)
+
 var defaultSalt = []byte{0xff, 0x56, 0xfe, 0x37, 0x99, 0x2f}
 
 type Cipher struct {
@@ -93,4 +98,8 @@ func (c *Cipher) decryptData(cipherdata []byte) ([]byte, error) {
 		return nil, errors.New("decryption error")
 	}
 	return decryptedData, nil
+}
+
+func encryptedSize(size int64) int64 {
+	return size + headerSize
 }
