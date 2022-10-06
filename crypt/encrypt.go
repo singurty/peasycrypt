@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+_	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -73,8 +74,8 @@ func encryptFile(path string, deleteSrc bool) {
 		}
 	}
 
-//	fmt.Printf("current file: %v\n", path)
-//	fmt.Printf("encrypted name: %v\n", ciphername)
+//	log.Printf("current file: %v\n", path)
+//	log.Printf("encrypted name: %v\n", ciphername)
 
 	// delete source file after encryption
 	if deleteSrc {
@@ -102,8 +103,8 @@ func encryptDirectory(srcPath, dstPath string, deleteSrc bool) {
 			return nil
 		}
 		ciphername := c.encryptName(d.Name())
-//		fmt.Printf("current directory: %v\n", path)
-//		fmt.Printf("encrypted name: %v\n", ciphername)
+//		log.Printf("current directory: %v\n", path)
+//		log.Printf("encrypted name: %v\n", ciphername)
 
 		// Check if sister or parent of last directory
 		if lastDir != "" {
@@ -111,7 +112,19 @@ func encryptDirectory(srcPath, dstPath string, deleteSrc bool) {
 			checkErr(err)
 
 			if strings.HasPrefix(rel, "..") {
-				os.Chdir("..")
+
+				// We may have gone back more than one directory. In that case, we
+				// need to do as much os.Chdir("..") for every .. in the beginning
+				// of the relative path
+				var i int
+				for strings.HasPrefix(rel, "..") {
+					os.Chdir("..")
+
+					// Skip the first three characters which would be ../ and check if
+					// we have .. again.
+					i += 3
+					rel = rel[i:]
+				}
 
 				// We only go back a directory after everything in the last
 				// directory has been encrypted. So last directory can been
