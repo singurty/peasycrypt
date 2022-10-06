@@ -2,59 +2,111 @@ package mount
 
 import (
 	"context"
-	"log"
+	"fmt"
+_	"log"
 	"os"
 	"syscall"
 
 	"bazil.org/fuse"
 	"bazil.org/fuse/fs"
+	"golang.org/x/crypto/ssh/terminal"
+
+	"github.com/singurty/peasycrypt/crypt"
 )
 
-func Mount(path, mountpoint string) {
-	c, err := fuse.Mount(mountpoint, fuse.FSName("peasycrypt"), fuse.Subtype("peasycrypt"))
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer c.Close()
+var c *crypt.Cipher
+var rootPath string
 
-	err = fs.Serve(c, FS{})
+func Mount(path, mountpoint, password string) {
+	if password == "" {
+		fmt.Printf("Enter password: ")
+		passwordByte, err := terminal.ReadPassword(int(os.Stdin.Fd()))
+		password = string(passwordByte)
+		if err != nil {
+			panic(err)
+		}
+	}
+	fmt.Print("\n")
+	rootPath = path
+	var err error
+	c, err = crypt.NewCipher(string(password), "")
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
+	}
+
+	conn, err := fuse.Mount(mountpoint, fuse.FSName("peasycrypt"), fuse.Subtype("peasycrypt"))
+	if err != nil {
+		panic(err)
+	}
+	defer conn.Close()
+
+	filesys := &FS{
+		cipher: c,
+	}
+	err = fs.Serve(conn, filesys)
+	if err != nil {
+		panic(err)
 	}
 }
 
-type FS struct{}
-
-func (FS) Root() (fs.Node, error) {
-	return Dir{}, nil
+type FS struct{
+	cipher *crypt.Cipher
 }
 
-type Dir struct{}
+func (f *FS) Root() (fs.Node, error) {
+	cryptDir, err := c.NewDir(rootPath)
+	if err != nil {
+		return nil, err
+	}
+	fileInfo, err := os.Stat(rootPath)
+	if err != nil {
+		return nil, err
+	}
+	n := &Dir{
+		fileInfo: fileInfo,
+		path: rootPath,
+		cryptDir: cryptDir,
+	}
+	return n, nil
+}
 
-func (Dir) Attr(ctx context.Context, a *fuse.Attr) error {
-	a.Inode = 1
-	a.Mode = os.ModeDir | 0o555
+type Dir struct {
+	fileInfo os.FileInfo
+	path string
+	cryptDir *crypt.Dir
+}
+
+var _ fs.Node = (*Dir)(nil)
+
+func (d *Dir) Attr(ctx context.Context, a *fuse.Attr) error {
+	a.Size = uint64(d.fileInfo.Size())
+	a.Mode = d.fileInfo.Mode()
+	a.Mtime = d.fileInfo.ModTime()
 	return nil
 }
 
-func (Dir) Lookup(ctx context.Context, name string) (fs.Node, error ) {
-	if name == "hello" {
-		return File{}, nil
+var _ = fs.HandleReadDirAller(&Dir{})
+
+func (d *Dir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
+	names, dirs, err := d.cryptDir.ReadDir()
+	if err != nil {
+		return nil, err
 	}
+	dirents := make([]fuse.Dirent, len(names))
+	for i, name := range names {
+//		log.Printf("encry: %v", name)
+		dirents[i].Name = name
+		if dirs[i] {
+			dirents[i].Type = fuse.DT_Dir
+		}
+	}
+	return dirents, nil
+}
+
+var _ = fs.NodeRequestLookuper(&Dir{})
+
+func (d *Dir) Lookup(ctx context.Context, req *fuse.LookupRequest, resp *fuse.LookupResponse) (fs.Node, error ) {
 	return nil, syscall.ENOENT
 }
 
 type File struct{}
-
-const greeting = "hello, world\n"
-
-func (File) Attr(ctx context.Context, a *fuse.Attr) error {
-	a.Inode = 2
-	a.Mode = 0o444
-	a.Size = uint64(len(greeting))
-	return nil
-}
-
-func (File) ReadAll(ctx context.Context) ([]byte, error) {
-	return []byte(greeting), nil
-}

@@ -59,7 +59,7 @@ type Cipher struct {
 	block gocipher.Block
 }
 
-func newCipher(password, salt string) (*Cipher, error) {
+func NewCipher(password, salt string) (*Cipher, error) {
 	c := &Cipher{}
 	err := c.key(password, salt)
 	if err != nil {

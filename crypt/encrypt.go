@@ -28,7 +28,7 @@ func Encrypt(password, srcPath, dstPath string, deleteSrc bool) {
 	}
 	fmt.Print("\n")
 	var err error
-	c, err = newCipher(string(password), "")
+	c, err = NewCipher(string(password), "")
 	checkErr(err)
 
 	fi, err := os.Stat(srcPath)

@@ -16,6 +16,6 @@ var mountCmd = &cobra.Command{
 	Long: "Encrypt a directory with all its contents. The encrypted content will be at <destination>",
 	Args: cobra.ExactArgs(2),
 	Run: func(command *cobra.Command, args []string) {
-		mount.Mount(args[0], args[1])
+		mount.Mount(args[0], args[1],"")
 	},
 }

@@ -29,7 +29,7 @@ func TestMain(m *testing.M) {
 	checkErr(err)
 
 	// Setup cipher
-	c, err = newCipher("", "")
+	c, err = NewCipher("", "")
 	checkErr(err)
 	os.Exit(m.Run())
 }
