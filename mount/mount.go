@@ -3,9 +3,9 @@ package mount
 import (
 	"context"
 	"fmt"
-_	"log"
+	_ "log"
 	"os"
-	"syscall"
+	"path/filepath"
 
 	"bazil.org/fuse"
 	"bazil.org/fuse/fs"
@@ -49,7 +49,7 @@ func Mount(path, mountpoint, password string) {
 	}
 }
 
-type FS struct{
+type FS struct {
 	cipher *crypt.Cipher
 }
 
@@ -58,30 +58,30 @@ func (f *FS) Root() (fs.Node, error) {
 	if err != nil {
 		return nil, err
 	}
-	fileInfo, err := os.Stat(rootPath)
+	info, err := os.Stat(rootPath)
 	if err != nil {
 		return nil, err
 	}
 	n := &Dir{
-		fileInfo: fileInfo,
-		path: rootPath,
+		info:     info,
+		path:     rootPath,
 		cryptDir: cryptDir,
 	}
 	return n, nil
 }
 
 type Dir struct {
-	fileInfo os.FileInfo
-	path string
+	info     os.FileInfo
+	path     string
 	cryptDir *crypt.Dir
 }
 
 var _ fs.Node = (*Dir)(nil)
 
 func (d *Dir) Attr(ctx context.Context, a *fuse.Attr) error {
-	a.Size = uint64(d.fileInfo.Size())
-	a.Mode = d.fileInfo.Mode()
-	a.Mtime = d.fileInfo.ModTime()
+	a.Size = uint64(d.info.Size())
+	a.Mode = d.info.Mode()
+	a.Mtime = d.info.ModTime()
 	return nil
 }
 
@@ -94,7 +94,7 @@ func (d *Dir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 	}
 	dirents := make([]fuse.Dirent, len(names))
 	for i, name := range names {
-//		log.Printf("encry: %v", name)
+		//		log.Printf("encry: %v", name)
 		dirents[i].Name = name
 		if dirs[i] {
 			dirents[i].Type = fuse.DT_Dir
@@ -105,8 +105,36 @@ func (d *Dir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 
 var _ = fs.NodeRequestLookuper(&Dir{})
 
-func (d *Dir) Lookup(ctx context.Context, req *fuse.LookupRequest, resp *fuse.LookupResponse) (fs.Node, error ) {
-	return nil, syscall.ENOENT
+func (d *Dir) Lookup(ctx context.Context, req *fuse.LookupRequest, resp *fuse.LookupResponse) (fs.Node, error) {
+	//	log.Printf("got lookup request: %v", req.Name)
+	cryptNode, info, err := d.cryptDir.Lookup(req.Name)
+	if err != nil {
+		return nil, err
+	}
+	if info.IsDir() {
+		return &Dir{
+			info:     info,
+			path:     filepath.Join(d.path, req.Name),
+			cryptDir: cryptNode.(*crypt.Dir),
+		}, nil
+	} else {
+		return &File{
+			info:      info,
+			path:      filepath.Join(d.path, req.Name),
+			cryptFile: cryptNode.(*crypt.File),
+		}, nil
+	}
 }
 
-type File struct{}
+type File struct {
+	info      os.FileInfo
+	path      string
+	cryptFile *crypt.File
+}
+
+func (f *File) Attr(ctx context.Context, a *fuse.Attr) error {
+	a.Size = uint64(f.info.Size())
+	a.Mode = f.info.Mode()
+	a.Mtime = f.info.ModTime()
+	return nil
+}
