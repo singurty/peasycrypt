@@ -1,6 +1,7 @@
 package crypt
 
 import (
+	"io"
 	_ "log"
 	"os"
 	"path/filepath"
@@ -61,15 +62,47 @@ func (d *Dir) Lookup(name string) (Node, os.FileInfo, error) {
 		}, info, nil
 	} else {
 		return &File{
-			cipher: d.cipher,
-			name:   name,
-			parent: d,
+			cipher:   d.cipher,
+			name:     name,
+			realpath: filepath.Join(d.realpath, ciphername),
+			parent:   d,
+			Size:     decryptedSize(info.Size()),
 		}, info, nil
 	}
 }
 
 type File struct {
+	cipher   *Cipher
+	name     string
+	realpath string
+	Size     int64 // Size of the file when unencrypted
+	parent   *Dir
+}
+
+func (f *File) NewReader() (*Reader, error) {
+	data, err := os.ReadFile(f.realpath)
+	if err != nil {
+		return nil, err
+	}
+	return &Reader{
+		cipher: f.cipher,
+		data:   data,
+	}, nil
+}
+
+type Reader struct {
 	cipher *Cipher
-	name   string
-	parent *Dir
+	data   []byte
+}
+
+func (r *Reader) Read(p []byte) (n int, err error) {
+	decryptedData, err := r.cipher.decryptData(r.data)
+	//	log.Printf("decrypted data: %s", decryptedData)
+	n = copy(p, decryptedData)
+	//	log.Printf("asked to read: %v actually read: %v total data: %v", len(p), n, len(r.data))
+	return n, io.EOF
+}
+
+func (r *Reader) Close() error {
+	return nil
 }

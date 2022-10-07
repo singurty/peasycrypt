@@ -3,6 +3,7 @@ package mount
 import (
 	"context"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"os/signal"
@@ -145,9 +146,50 @@ type File struct {
 	cryptFile *crypt.File
 }
 
+var _ fs.Node = (*File)(nil)
+
 func (f *File) Attr(ctx context.Context, a *fuse.Attr) error {
-	a.Size = uint64(f.info.Size())
+	a.Size = uint64(f.cryptFile.Size)
 	a.Mode = f.info.Mode()
 	a.Mtime = f.info.ModTime()
 	return nil
+}
+
+var _ = fs.NodeOpener(&File{})
+
+func (f *File) Open(ctx context.Context, req *fuse.OpenRequest, resp *fuse.OpenResponse) (fs.Handle, error) {
+	// Disable seeking for now. Will implement later.
+	resp.Flags |= fuse.OpenNonSeekable
+	r, err := f.cryptFile.NewReader()
+	if err != nil {
+		return nil, err
+	}
+	return &FileHandle{r: r}, nil
+}
+
+type FileHandle struct {
+	r io.ReadCloser
+}
+
+var _ fs.Handle = (*FileHandle)(nil)
+
+var _ fs.HandleReleaser = (*FileHandle)(nil)
+
+func (fh *FileHandle) Release(ctx context.Context, req *fuse.ReleaseRequest) error {
+	return fh.r.Close()
+}
+
+var _ = fs.HandleReader(&FileHandle{})
+
+func (fh *FileHandle) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.ReadResponse) error {
+	buf := make([]byte, req.Size)
+	n, err := io.ReadFull(fh.r, buf)
+	if err == io.ErrUnexpectedEOF || err == io.EOF {
+		err = nil
+	}
+	resp.Data = buf[:n]
+	if err != nil {
+		log.Fatal(err)
+	}
+	return err
 }

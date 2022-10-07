@@ -110,7 +110,7 @@ func (c *Cipher) decryptName(ciphertext string) (string, error) {
 }
 
 func (c *Cipher) encryptData(plaindata []byte) ([]byte, error) {
-	var nonce [24]byte
+	var nonce [nonceSize]byte
 	_, err := rand.Read(nonce[:])
 	if err != nil {
 		return nil, err
@@ -121,9 +121,9 @@ func (c *Cipher) encryptData(plaindata []byte) ([]byte, error) {
 }
 
 func (c *Cipher) decryptData(cipherdata []byte) ([]byte, error) {
-	var decryptNonce [24]byte
-	copy(decryptNonce[:], cipherdata[:24])
-	decryptedData, ok := secretbox.Open(nil, cipherdata[24:], &decryptNonce, &c.dataKey)
+	var decryptNonce [nonceSize]byte
+	copy(decryptNonce[:], cipherdata[:nonceSize])
+	decryptedData, ok := secretbox.Open(nil, cipherdata[nonceSize:], &decryptNonce, &c.dataKey)
 	if !ok {
 		return nil, errors.New("decryption error")
 	}
@@ -132,4 +132,8 @@ func (c *Cipher) decryptData(cipherdata []byte) ([]byte, error) {
 
 func encryptedSize(size int64) int64 {
 	return size + headerSize
+}
+
+func decryptedSize(size int64) int64 {
+	return size - headerSize
 }
