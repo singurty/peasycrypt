@@ -3,8 +3,9 @@ package mount
 import (
 	"context"
 	"fmt"
-	_ "log"
+	"log"
 	"os"
+	"os/signal"
 	"path/filepath"
 
 	"bazil.org/fuse"
@@ -39,6 +40,18 @@ func Mount(path, mountpoint, password string) {
 		panic(err)
 	}
 	defer conn.Close()
+
+	// Unmount and exit when interrupted
+	interruptChan := make(chan os.Signal)
+	signal.Notify(interruptChan, os.Interrupt)
+	go func() {
+		<-interruptChan
+		err := fuse.Unmount(mountpoint)
+		if err != nil {
+			log.Fatal(err)
+		}
+		os.Exit(0)
+	}()
 
 	filesys := &FS{
 		cipher: c,
