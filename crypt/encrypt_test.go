@@ -36,7 +36,7 @@ func TestMain(m *testing.M) {
 
 func TestEncryptFile(t *testing.T) {
 	createTestDirs(t)
-	
+
 	plainFile := filepath.Join(plainDir, "hello.txt")
 	plainData := []byte("hello this is peasycrypt speaking")
 	createFile(t, plainFile, plainData)
@@ -52,7 +52,7 @@ func TestEncryptFile(t *testing.T) {
 	} else if err != nil {
 		t.Error(err)
 	}
-	
+
 	decryptedName, err := c.decryptName(filepath.Base(cipherFile))
 	if err != nil {
 		t.Errorf("failed name decryption: %v", err)
@@ -60,7 +60,7 @@ func TestEncryptFile(t *testing.T) {
 	if decryptedName != filepath.Base(plainFile) {
 		t.Errorf("decrypted name mismatch")
 	}
-	
+
 	// Encryption cannot be changed independently because the nonce is randomly
 	// generated. We can test decryption of data and if that works encryption and
 	// decryption both works.
@@ -81,7 +81,7 @@ func TestEncryptFile(t *testing.T) {
 			t.Error(err)
 		}
 	}
-	
+
 	// Original file should be deleted when deleteSrc is set to true
 	encryptFile(plainFile, true)
 	exist, err = doesFileExist(plainFile)
@@ -116,14 +116,14 @@ func TestEncryptDirectory(t *testing.T) {
 		"3bb40sjbkfh7kggkgpk3jim8ms/67dcveth5b7r9bjl00vdoa8pmk/ntr7fa5tteqbunsitsffq9kc9k",
 		"3bb40sjbkfh7kggkgpk3jim8ms/94agtmv411602npe2kug2d5kbs",
 	}
-	expectedTreeWithRoot := make([]string, len(expectedTreeWithoutRoot) + 1)
+	expectedTreeWithRoot := make([]string, len(expectedTreeWithoutRoot)+1)
 	expectedTreeWithRoot[0] = "9daaitvmvl722hchljeu5msi24"
 	for i, withoutRoot := range expectedTreeWithoutRoot {
 		withRoot := filepath.Join(expectedTreeWithRoot[0], withoutRoot)
 		expectedTreeWithRoot[i+1] = withRoot
 	}
 
-	encryptDirectory(plainDir + "/", cryptDir, true)
+	encryptDirectory(plainDir+"/", cryptDir, true)
 	checkDirTree(t, cryptDir, expectedTreeWithoutRoot)
 
 	// Since we set deleteSrc to true, plainDir should now be empty
@@ -159,7 +159,7 @@ func checkDirTree(t *testing.T, path string, expectedTree []string) {
 			rootGone = true
 			return nil
 		}
-//		t.Logf("current entry: %v", path)
+		//		t.Logf("current entry: %v", path)
 		if !strings.HasSuffix(path, expectedTree[i]) {
 			t.Errorf("direcotry is not what it should be.\nexpected: %v\ngot:%v", expectedTree[i], path)
 		}
@@ -203,16 +203,16 @@ func doesFileExist(path string) (bool, error) {
 
 func isEmpty(path string, t *testing.T) (bool, error) {
 	f, err := os.Open(path)
-    if err != nil {
+	if err != nil {
 		return false, err
-    }
-    defer f.Close()
+	}
+	defer f.Close()
 
 	_, err = f.Readdirnames(1)
-    if errors.Is(err, io.EOF) {
-        return true, nil
-    }
-    return false, err
+	if errors.Is(err, io.EOF) {
+		return true, nil
+	}
+	return false, err
 }
 
 func createFile(t *testing.T, path string, data []byte) {

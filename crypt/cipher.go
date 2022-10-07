@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	nonceSize = 24
+	nonceSize  = 24
 	headerSize = nonceSize + secretbox.Overhead
 )
 
@@ -53,10 +53,10 @@ func decodeString(s string) ([]byte, error) {
 }
 
 type Cipher struct {
-	dataKey [32]byte
-	nameKey [32]byte
+	dataKey   [32]byte
+	nameKey   [32]byte
 	nameTweak [aes.BlockSize]byte
-	block gocipher.Block
+	block     gocipher.Block
 }
 
 func NewCipher(password, salt string) (*Cipher, error) {

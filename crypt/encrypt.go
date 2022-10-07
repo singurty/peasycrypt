@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
-_	"log"
+	_ "log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -74,8 +74,8 @@ func encryptFile(path string, deleteSrc bool) {
 		}
 	}
 
-//	log.Printf("current file: %v\n", path)
-//	log.Printf("encrypted name: %v\n", ciphername)
+	//	log.Printf("current file: %v\n", path)
+	//	log.Printf("encrypted name: %v\n", ciphername)
 
 	// delete source file after encryption
 	if deleteSrc {
@@ -103,8 +103,8 @@ func encryptDirectory(srcPath, dstPath string, deleteSrc bool) {
 			return nil
 		}
 		ciphername := c.encryptName(d.Name())
-//		log.Printf("current directory: %v\n", path)
-//		log.Printf("encrypted name: %v\n", ciphername)
+		//		log.Printf("current directory: %v\n", path)
+		//		log.Printf("encrypted name: %v\n", ciphername)
 
 		// Check if sister or parent of last directory
 		if lastDir != "" {
@@ -178,5 +178,5 @@ func removeContents(dir string) {
 	for _, name := range names {
 		err = os.RemoveAll(filepath.Join(dir, name))
 		checkErr(err)
-    }
+	}
 }

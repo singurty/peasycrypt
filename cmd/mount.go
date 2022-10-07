@@ -11,11 +11,11 @@ func init() {
 }
 
 var mountCmd = &cobra.Command{
-	Use: "mount <directory> <mountpoint>",
+	Use:   "mount <directory> <mountpoint>",
 	Short: "Mount an encrypted directory.",
-	Long: "Encrypt a directory with all its contents. The encrypted content will be at <destination>",
-	Args: cobra.ExactArgs(2),
+	Long:  "Encrypt a directory with all its contents. The encrypted content will be at <destination>",
+	Args:  cobra.ExactArgs(2),
 	Run: func(command *cobra.Command, args []string) {
-		mount.Mount(args[0], args[1],"")
+		mount.Mount(args[0], args[1], "")
 	},
 }

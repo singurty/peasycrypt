@@ -6,7 +6,7 @@ import (
 
 var (
 	rootCmd = &cobra.Command{
-		Use: "peasycrypt",
+		Use:   "peasycrypt",
 		Short: "Encryption made easy peasy.",
 	}
 )
